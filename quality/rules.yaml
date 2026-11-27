@@ -1,0 +1,113 @@
+# 数据质量规则配置
+#
+# 设计原则：
+#   1. 规则是配置，不是代码——改规则不改程序
+#   2. 每条规则都有 expect（期望异常数），实际值要和它对账
+#      expect 为 null 表示只观察、不断言（如环比波动）
+#   3. severity 决定问题的严重程度：high 必须修，medium 可容忍，low 只观察
+
+version: 1
+
+checks:
+  # ---------- ODS 层：脏数据体检 ----------
+  - id: ODS-001
+    name: 订单 user_id 不能为空
+    table: ods.orders
+    type: not_null
+    column: user_id
+    severity: high
+    expect: 1000          # 造数注入 1.0%
+
+  - id: ODS-002
+    name: 订单金额不能为负
+    table: ods.orders
+    type: range
+    column: pay_amount
+    min: 0
+    severity: high
+    expect: 500           # 造数注入 0.5%
+
+  - id: ODS-003
+    name: 订单号必须唯一
+    table: ods.orders
+    type: unique
+    column: order_no
+    severity: high
+    expect: 300           # 造数注入 0.3%（重复多出来的行数）
+
+  - id: ODS-004
+    name: 订单状态必须是合法枚举
+    table: ods.orders
+    type: enum
+    column: order_status
+    allowed: [created, paid, shipped, finished, cancelled]
+    severity: medium
+    expect: 200           # 造数注入 0.2%
+
+  - id: ODS-005
+    name: 支付时间不能早于创建时间
+    table: ods.orders
+    type: time_order
+    later_col: paid_at
+    earlier_col: created_at
+    severity: medium
+    expect: 100           # 造数注入 0.1%
+
+  # ---------- DWD 层：清洗结果校验 ----------
+  - id: DWD-001
+    name: 订单金额必须等于明细汇总
+    type: sum_match
+    left:  { table: dwd.fact_order,      key: order_no, col: pay_amount }
+    right: { table: dwd.fact_order_line, key: order_no, col: line_amount }
+    severity: high
+    expect: 0
+
+  - id: DWD-002
+    name: 订单的用户必须存在于用户维度
+    type: referential
+    child:  { table: dwd.fact_order, col: user_id }
+    parent: { table: dwd.dim_user,    col: user_id }
+    severity: high
+    expect: 0
+
+  # ---------- 完整性校验：表不能是空的 ----------
+  # 为什么单独一类：血缘和 DAG 检查只能发现"依赖缺失"，
+  # 发现不了"表存在但没有数据"。空表会让下游 JOIN 出 0 行、报表归零，全程不报错。
+  - id: DWD-003
+    name: 商品维度表不能为空
+    type: row_count
+    table: dwd.dim_product
+    min_rows: 1
+    severity: high
+
+  - id: DWD-004
+    name: 订单事实表不能为空
+    type: row_count
+    table: dwd.fact_order
+    min_rows: 1
+    severity: high
+
+  - id: DWS-001
+    name: 商品日汇总不能为空
+    type: row_count
+    table: dws.product_day
+    min_rows: 1
+    severity: high
+
+  - id: ADS-002
+    name: GMV 日报不能为空
+    type: row_count
+    table: ads.gmv_daily
+    min_rows: 1
+    severity: high
+
+  # ---------- ADS 层：指标合理性 ----------
+  - id: ADS-001
+    name: 日 GMV 环比波动不超过 50%
+    type: change_rate
+    table: ads.gmv_daily
+    date_col: stat_date
+    value_col: gmv
+    threshold: 0.5
+    severity: low
+    expect: null          # 只观察，不断言

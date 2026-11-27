@@ -1,0 +1,55 @@
+# 电商数据平台 · 基础设施
+#
+# 启动：docker compose up -d
+# 状态：docker compose ps
+# 连库：docker compose exec mysql mysql -uroot -proot123 -e "show databases;"
+# 清空：docker compose down -v   （连数据一起删，初始化脚本会重新执行）
+
+services:
+  metabase:
+    image: metabase/metabase:latest
+    container_name: metabase
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - metabase_data:/metabase-data
+    environment:
+      MB_DB_FILE: /metabase-data/metabase.db
+      TZ: Asia/Shanghai
+
+  mysql:
+    image: mysql:8.4
+    container_name: data-mysql
+    restart: unless-stopped
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      TZ: Asia/Shanghai
+
+    # 宿主机 3307 -> 容器 3306
+    # 用 3307 是因为你的后端项目已经占用 3306，两个项目各用各的库，互不干扰
+    ports:
+      - "3307:3306"
+
+    volumes:
+      - data_mysql:/var/lib/mysql
+      # 首次启动时自动执行该目录下所有 .sql（按文件名排序）
+      - ./sql/init:/docker-entrypoint-initdb.d:ro
+
+    # 统一字符集与时区，否则中文乱码、时间差 8 小时
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+08:00
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot123"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  data_mysql:
+  metabase_data:

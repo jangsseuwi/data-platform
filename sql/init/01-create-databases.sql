@@ -1,0 +1,15 @@
+-- 数据平台初始化脚本
+-- 只在容器【第一次创建】时执行（数据目录为空时）
+-- 想重新执行：docker compose down -v 然后再 up
+
+CREATE DATABASE IF NOT EXISTS ods
+    DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+
+CREATE DATABASE IF NOT EXISTS dwd
+    DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+
+CREATE DATABASE IF NOT EXISTS dws
+    DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+
+CREATE DATABASE IF NOT EXISTS ads
+    DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;

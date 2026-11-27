@@ -1,0 +1,86 @@
+{
+  "engine": "sqlglot",
+  "nodes": [
+    "ads.gmv_daily",
+    "ads.top_products",
+    "ads.user_retention",
+    "dwd.dim_product",
+    "dwd.dim_user",
+    "dwd.fact_order",
+    "dwd.fact_order_line",
+    "dws.category_day",
+    "dws.product_day",
+    "dws.user_day",
+    "ods.order_items",
+    "ods.orders",
+    "ods.products",
+    "ods.users"
+  ],
+  "edges": [
+    {
+      "from": "dwd.dim_product",
+      "to": "ads.top_products"
+    },
+    {
+      "from": "dwd.dim_product",
+      "to": "dws.category_day"
+    },
+    {
+      "from": "dwd.dim_user",
+      "to": "dws.user_day"
+    },
+    {
+      "from": "dwd.fact_order",
+      "to": "ads.gmv_daily"
+    },
+    {
+      "from": "dwd.fact_order",
+      "to": "ads.user_retention"
+    },
+    {
+      "from": "dwd.fact_order",
+      "to": "dwd.fact_order_line"
+    },
+    {
+      "from": "dwd.fact_order",
+      "to": "dws.category_day"
+    },
+    {
+      "from": "dwd.fact_order",
+      "to": "dws.product_day"
+    },
+    {
+      "from": "dwd.fact_order",
+      "to": "dws.user_day"
+    },
+    {
+      "from": "dwd.fact_order_line",
+      "to": "dws.category_day"
+    },
+    {
+      "from": "dwd.fact_order_line",
+      "to": "dws.product_day"
+    },
+    {
+      "from": "dws.product_day",
+      "to": "ads.top_products"
+    },
+    {
+      "from": "ods.order_items",
+      "to": "dwd.fact_order_line"
+    },
+    {
+      "from": "ods.orders",
+      "to": "dwd.fact_order"
+    },
+    {
+      "from": "ods.products",
+      "to": "dwd.dim_product"
+    },
+    {
+      "from": "ods.users",
+      "to": "dwd.dim_user"
+    }
+  ],
+  "dag_problems": []
+}
